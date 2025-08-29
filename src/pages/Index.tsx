@@ -1,11 +1,62 @@
-import { Wallet, PiggyBank, TrendingDown } from "lucide-react";
+import { Navigate } from "react-router-dom";
+import { Wallet, PiggyBank, TrendingDown, LogOut, Plus } from "lucide-react";
 import SpendingChart from "@/components/SpendingChart";
 import AIInsightCard from "@/components/AIInsightCard";
 import StreakCounter from "@/components/StreakCounter";
 import BadgeSystem from "@/components/BadgeSystem";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
+import { useTransactions } from "@/hooks/useTransactions";
 
 const Index = () => {
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { profile, loading: profileLoading } = useProfile();
+  const { transactions, loading: transactionsLoading } = useTransactions();
+
+  // If not authenticated, redirect to auth page
+  if (!authLoading && !user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // Show loading state while fetching data
+  if (authLoading || profileLoading || transactionsLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 flex items-center justify-center">
+        <div className="text-center">
+          <div className="bg-gradient-primary p-3 rounded-xl mb-4 inline-block">
+            <PiggyBank className="h-8 w-8 text-white animate-pulse" />
+          </div>
+          <p>Loading your financial data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate financial statistics from real data
+  const weeklyExpenses = transactions
+    .filter(t => {
+      const transactionDate = new Date(t.transaction_date);
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return transactionDate >= weekAgo && t.category.type === 'expense';
+    })
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const monthlyExpenses = transactions
+    .filter(t => {
+      const transactionDate = new Date(t.transaction_date);
+      const monthAgo = new Date();
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+      return transactionDate >= monthAgo && t.category.type === 'expense';
+    })
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const monthlyBudget = profile?.monthly_budget || 12000;
+  const remainingBudget = monthlyBudget - monthlyExpenses;
+  const budgetPercentage = Math.round((monthlyExpenses / monthlyBudget) * 100);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
       {/* Header */}
@@ -21,9 +72,14 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground">Your witty financial coach</p>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Demo User</p>
-              <p className="font-semibold">Rahul Sharma</p>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Welcome back!</p>
+                <p className="font-semibold">{profile?.full_name || user?.email?.split('@')[0]}</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={signOut}>
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
@@ -40,10 +96,10 @@ const Index = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₹3,300</div>
-              <p className="text-sm text-destructive">
+              <div className="text-2xl font-bold">₹{weeklyExpenses.toLocaleString()}</div>
+              <p className={`text-sm ${budgetPercentage > 100 ? 'text-destructive' : 'text-success'}`}>
                 <TrendingDown className="h-4 w-4 inline mr-1" />
-                12% over budget
+                {budgetPercentage > 100 ? `${budgetPercentage - 100}% over budget` : 'Within budget'}
               </p>
             </CardContent>
           </Card>
@@ -56,8 +112,10 @@ const Index = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₹12,000</div>
-              <p className="text-sm text-success">₹1,800 remaining</p>
+              <div className="text-2xl font-bold">₹{monthlyBudget.toLocaleString()}</div>
+              <p className={`text-sm ${remainingBudget < 0 ? 'text-destructive' : 'text-success'}`}>
+                ₹{Math.abs(remainingBudget).toLocaleString()} {remainingBudget < 0 ? 'over budget' : 'remaining'}
+              </p>
             </CardContent>
           </Card>
 
@@ -74,12 +132,12 @@ const Index = () => {
               <CardTitle>Weekly Spending Breakdown</CardTitle>
             </CardHeader>
             <CardContent>
-              <SpendingChart />
+              <SpendingChart transactions={transactions} />
             </CardContent>
           </Card>
 
           {/* AI Insights */}
-          <AIInsightCard />
+          <AIInsightCard transactions={transactions} />
         </div>
 
         {/* Badge System */}
