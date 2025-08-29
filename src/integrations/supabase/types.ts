@@ -14,7 +14,134 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          color: string
+          created_at: string
+          icon: string | null
+          id: string
+          name: string
+          type: string
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name: string
+          type: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          monthly_budget: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          monthly_budget?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          monthly_budget?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          app_name: string | null
+          category_id: string
+          created_at: string
+          description: string | null
+          id: string
+          transaction_date: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          app_name?: string | null
+          category_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          transaction_date?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          app_name?: string | null
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          transaction_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_badges: {
+        Row: {
+          badge_description: string | null
+          badge_icon: string | null
+          badge_name: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_description?: string | null
+          badge_icon?: string | null
+          badge_name: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_description?: string | null
+          badge_icon?: string | null
+          badge_name?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
