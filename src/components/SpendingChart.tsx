@@ -1,14 +1,37 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { Transaction } from '@/hooks/useTransactions';
 
-const spendingData = [
-  { name: 'Food', value: 1200, color: 'hsl(var(--destructive))' },
-  { name: 'Transport', value: 800, color: 'hsl(var(--warning))' },
-  { name: 'Entertainment', value: 600, color: 'hsl(var(--primary))' },
-  { name: 'Shopping', value: 400, color: 'hsl(var(--accent))' },
-  { name: 'Bills', value: 300, color: 'hsl(var(--muted))' }
-];
+interface SpendingChartProps {
+  transactions: Transaction[];
+}
 
-const SpendingChart = () => {
+const SpendingChart = ({ transactions }: SpendingChartProps) => {
+  // Process transactions to create chart data
+  const expenseTransactions = transactions.filter(t => t.category.type === 'expense');
+  
+  const categoryTotals = expenseTransactions.reduce((acc, transaction) => {
+    const categoryName = transaction.category.name;
+    if (!acc[categoryName]) {
+      acc[categoryName] = {
+        name: categoryName,
+        value: 0,
+        color: transaction.category.color
+      };
+    }
+    acc[categoryName].value += transaction.amount;
+    return acc;
+  }, {} as Record<string, { name: string; value: number; color: string }>);
+
+  const spendingData = Object.values(categoryTotals).sort((a, b) => b.value - a.value);
+
+  if (spendingData.length === 0) {
+    return (
+      <div className="h-64 flex items-center justify-center text-muted-foreground">
+        <p>No expense data available. Start adding transactions!</p>
+      </div>
+    );
+  }
+
   const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
@@ -51,7 +74,7 @@ const SpendingChart = () => {
             ))}
           </Pie>
           <Tooltip 
-            formatter={(value: number) => [`₹${value}`, 'Amount']}
+            formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Amount']}
             contentStyle={{
               backgroundColor: 'hsl(var(--card))',
               border: '1px solid hsl(var(--border))',
@@ -63,7 +86,7 @@ const SpendingChart = () => {
             height={36}
             formatter={(value, entry: any) => (
               <span style={{ color: entry.color }}>
-                {value}: ₹{entry.payload.value}
+                {value}: ₹{entry.payload.value.toLocaleString()}
               </span>
             )}
           />
